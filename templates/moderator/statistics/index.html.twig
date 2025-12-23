@@ -1,0 +1,353 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Статистика оплат
+{% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<style>
+		.stat-card {
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			transition: transform 0.3s;
+		}
+		.stat-card:hover {
+			transform: translateY(-5px);
+		}
+		.progress {
+			height: 25px;
+			border-radius: 5px;
+		}
+		.table-hover tbody tr:hover {
+			background-color: rgba(0, 123, 255, 0.1);
+		}
+		.badge-pill {
+			padding: 0.5em 1em;
+			font-size: 0.9em;
+		}
+	</style>
+{% endblock %}
+
+{% block body %}
+	{% if app.user %}
+		<div class="mb-3">
+			Вы вошли как
+			{{ app.user.userIdentifier }},
+			<a href="{{ logout_path() }}">Выход</a>
+		</div>
+	{% endif %}
+	<div class="container-fluid py-4">
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<h1 class="h3 text-gray-800">
+				<i class="fas fa-chart-bar text-primary"></i>
+				Статистика оплат по направлениям
+			</h1>
+			<div>
+				{# <a href="{{ path('moderator_statistics_export_csv') }}" class="btn btn-success">
+													<i class="fas fa-file-export"></i>
+													Экспорт в CSV
+												</a> #}
+			</div>
+		</div>
+
+		<!-- Общая статистика -->
+		<div class="row mb-4">
+			<div class="col-md-4">
+				<div class="card stat-card border-left-success shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+									Всего оплачено
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{{ total_paid }}
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-check-circle fa-2x text-success"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-4">
+				<div class="card stat-card border-left-warning shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+									Ожидает оплаты
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{{ total_unpaid }}
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-clock fa-2x text-warning"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-4">
+				<div class="card stat-card border-left-info shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+									Всего платежей
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{{ total_payments }}
+								</div>
+								<div class="mt-2 mb-0">
+									<span class="badge badge-pill badge-success">
+										{{ (total_paid / total_payments * 100)|round(1) }}% оплачено
+									</span>
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-chart-pie fa-2x text-info"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Детальная статистика по направлениям -->
+		<div class="card shadow mb-4">
+			<div class="card-header py-3">
+				<h3 class="m-0 font-weight-bold text-primary">
+					Статистика по направлениям подготовки
+				</h3>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered table-hover" id="statsTable">
+						<thead class="thead-dark">
+							<tr>
+								<th>Направление подготовки</th>
+								<th class="text-center">Оплачено</th>
+								<th class="text-center">Не оплачено</th>
+								<th class="text-center">Всего</th>
+								<th class="text-center">% оплачено</th>
+								<th class="text-center">Прогресс</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for stat in stats %}
+								<tr>
+									<td>
+										<strong>{{ stat.direction }}</strong>
+									</td>
+									<td class="text-center">
+										<span class="badge badge-success badge-pill">
+											{{ stat.paidCount }}
+										</span>
+									</td>
+									<td class="text-center">
+										<span class="badge badge-warning badge-pill">
+											{{ stat.unpaidCount }}
+										</span>
+									</td>
+									<td class="text-center">
+										<span class="badge badge-primary badge-pill">
+											{{ stat.totalCount }}
+										</span>
+									</td>
+									<td class="text-center">
+										<strong>{{ stat.paidPercentage }}%</strong>
+									</td>
+									<td>
+										<div class="progress">
+											<div class="progress-bar bg-success" style="width: {{ stat.paidPercentage }}%" role="progressbar" aria-valuenow="{{ stat.paidPercentage }}" aria-valuemin="0" aria-valuemax="100">
+												{{ stat.paidPercentage }}%
+											</div>
+										</div>
+									</td>
+								</tr>
+							{% else %}
+								<tr>
+									<td colspan="6" class="text-center text-muted py-4">
+										<i class="fas fa-database fa-2x mb-3"></i>
+										<p>Нет данных для отображения</p>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+						<tfoot>
+							<tr class="table-active">
+								<td>
+									<strong>Итого:</strong>
+								</td>
+								<td class="text-center">
+									<span class="badge badge-success badge-pill">
+										{{ total_paid }}
+									</span>
+								</td>
+								<td class="text-center">
+									<span class="badge badge-warning badge-pill">
+										{{ total_unpaid }}
+									</span>
+								</td>
+								<td class="text-center">
+									<span class="badge badge-primary badge-pill">
+										{{ total_payments }}
+									</span>
+								</td>
+								<td class="text-center">
+									<strong>
+										{% if total_payments > 0 %}
+											{{ (total_paid / total_payments * 100)|round(1) }}%
+										{% else %}
+											0%
+										{% endif %}
+									</strong>
+								</td>
+								<td>
+									{% set total_percentage = total_payments > 0 ? (total_paid / total_payments * 100)|round(1) : 0 %}
+									<div class="progress">
+										<div class="progress-bar bg-success" style="width: {{ total_percentage }}%" role="progressbar">
+											{{ total_percentage }}%
+										</div>
+									</div>
+								</td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- График (опционально) -->
+		<div class="row">
+			<div class="col-lg-6">
+				<div class="card shadow mb-4">
+					<div class="card-header py-3">
+						<h6 class="m-0 font-weight-bold text-primary">
+							<i class="fas fa-chart-pie"></i>
+							Распределение по направлениям
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="chart-pie pt-4">
+							<canvas id="directionChart" height="300"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6">
+				<div class="card shadow mb-4">
+					<div class="card-header py-3">
+						<h6 class="m-0 font-weight-bold text-primary">
+							<i class="fas fa-chart-bar"></i>
+							Статус оплат
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="chart-bar pt-4">
+							<canvas id="statusChart" height="300"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block javascripts %}
+	{{ parent() }}
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () { // Данные для графиков
+const directions = {{ stats|map(stat => stat.direction)|json_encode|raw }};
+const paidCounts = {{ stats|map(stat => stat.paidCount)|json_encode|raw }};
+const unpaidCounts = {{ stats|map(stat => stat.unpaidCount)|json_encode|raw }};
+const totalCounts = {{ stats|map(stat => stat.totalCount)|json_encode|raw }};
+
+// Круговая диаграмма
+if (document.getElementById('directionChart')) {
+const ctx = document.getElementById('directionChart').getContext('2d');
+new Chart(ctx, {
+type: 'pie',
+data: {
+labels: directions,
+datasets: [
+{
+data: totalCounts,
+backgroundColor: [
+'#4e73df',
+'#1cc88a',
+'#36b9cc',
+'#f6c23e',
+'#e74a3b',
+'#6f42c1',
+'#fd7e14',
+'#20c9a6'
+],
+hoverBorderColor: "rgba(234, 236, 244, 1)"
+}
+]
+},
+options: {
+maintainAspectRatio: false,
+plugins: {
+legend: {
+position: 'bottom'
+}
+}
+}
+});
+}
+
+// Столбчатая диаграмма
+if (document.getElementById('statusChart')) {
+const ctx2 = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx2, {
+type: 'bar',
+data: {
+labels: directions,
+datasets: [
+{
+label: 'Оплачено',
+data: paidCounts,
+backgroundColor: '#1cc88a'
+}, {
+label: 'Не оплачено',
+data: unpaidCounts,
+backgroundColor: '#f6c23e'
+}
+]
+},
+options: {
+maintainAspectRatio: false,
+scales: {
+x: {
+stacked: false
+},
+y: {
+stacked: false,
+beginAtZero: true
+}
+}
+}
+});
+}
+
+// Сортировка таблицы
+$('#statsTable').DataTable({
+language: {
+url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Russian.json'
+},
+pageLength: 10,
+order: [
+[4, 'desc']
+] // Сортировка по % оплачено
+});
+});
+	</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Оплата #{{ payment.id }}
+{% endblock %}
+
+{% block body %}
+	<div class="container mt-4">
+		<div class="card">
+			<div class="card-header">
+				<h2>Оплата #{{ payment.id }}</h2>
+			</div>
+			<div class="card-body">
+				<dl class="row">
+					<dt class="col-sm-3">Услуга:</dt>
+					<dd class="col-sm-9">{{ payment.service.name }}</dd>
+
+					<dt class="col-sm-3">Описание:</dt>
+					<dd class="col-sm-9">{{ payment.service.description }}</dd>
+
+					<dt class="col-sm-3">Сумма:</dt>
+					<dd class="col-sm-9">{{ payment.summ }}
+						руб.</dd>
+
+					<dt class="col-sm-3">Дата создания:</dt>
+					<dd class="col-sm-9">{{ payment.date|date('d.m.Y H:i') }}</dd>
+
+					<dt class="col-sm-3">Статус:</dt>
+					<dd class="col-sm-9">
+						<span class="badge bg-warning">{{ payment.status }}</span>
+					</dd>
+				</dl>
+
+				<div class="mt-4">
+					{% if payment.status == 'ожидает' %}
+						<button class="btn btn-success" onclick="processPayment({{ payment.id }})">
+							Оплатить
+						</button>
+					{% endif %}
+					<a href="{{ path('student_payments_index') }}" class="btn btn-secondary">
+						Назад к списку
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

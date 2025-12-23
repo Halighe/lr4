@@ -1,0 +1,511 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Панель мастера - Детальная отчетность
+{% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<style>
+		.master-card {
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			transition: transform 0.3s;
+			border: none;
+		}
+		.master-card:hover {
+			transform: translateY(-5px);
+		}
+		.status-badge {
+			padding: 0.5em 1em;
+			border-radius: 20px;
+			font-size: 0.85em;
+			font-weight: 600;
+		}
+		.table-master tbody tr:hover {
+			background-color: rgba(0, 123, 255, 0.05);
+			cursor: pointer;
+		}
+		.amount-cell {
+			font-weight: 600;
+			color: #2e59d9;
+		}
+		.filter-section {
+			background: #f8f9fc;
+			border-radius: 8px;
+			padding: 1.5rem;
+			margin-bottom: 2rem;
+		}
+		.stat-number {
+			font-size: 2rem;
+			font-weight: 700;
+			color: #4e73df;
+		}
+	</style>
+{% endblock %}
+
+{% block body %}
+	{% if app.user %}
+		<div class="mb-3">
+			Вы вошли как
+			{{ app.user.userIdentifier }},
+			<a href="{{ logout_path() }}">Выход</a>
+		</div>
+	{% endif %}
+	<div
+		class="container-fluid py-4">
+		<!-- Заголовок -->
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<div>
+				<h1 class="h3 text-gray-800">
+					<i class="fas fa-chart-line text-primary"></i>
+					Детальная отчетность по оплатам
+				</h1>
+				<p class="text-muted mb-0">Полная информация об оплатах студентов по направлениям</p>
+			</div>
+			{# <div>
+																<a href="{{ path('master_export_csv') }}" class="btn btn-success">
+																	<i class="fas fa-file-export"></i>
+																	Экспорт в CSV
+																</a>
+															</div> #}
+		</div>
+
+		<!-- Статистика -->
+		<div class="row mb-4">
+			<div class="col-xl-3 col-md-6 mb-4">
+				<div class="card master-card border-left-primary shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+									Всего записей
+								</div>
+								<div class="stat-number">{{ total_payments }}</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-database fa-2x text-gray-300"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-xl-3 col-md-6 mb-4">
+				<div class="card master-card border-left-success shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+									Общая сумма
+								</div>
+								<div class="stat-number">{{ total_amount|number_format(0, ',', ' ') }}
+									₽</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-xl-3 col-md-6 mb-4">
+				<div class="card master-card border-left-info shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+									Статусы оплат
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{% for status in status_summary %}
+										<span class="badge bg-{{ status.status == 'завершена' ? 'success' : 'warning' }}">
+											{{ status.count }}
+										</span>
+									{% endfor %}
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-xl-3 col-md-6 mb-4">
+				<div class="card master-card border-left-warning shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+									Популярные услуги
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{{ top_services|length }}
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-star fa-2x text-gray-300"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Фильтры -->
+		{# <div class="filter-section">
+									<h5 class="mb-3">
+										<i class="fas fa-filter"></i>
+										Фильтры</h5>
+									<div class="row">
+										<div class="col-md-3">
+											<div class="form-group">
+												<label for="filterDirection">Направление</label>
+												<select class="form-control" id="filterDirection">
+													<option value="">Все направления</option>
+													{% set directions = [] %}
+													{% for payment in student_payments %}
+														{% if payment.direction not in directions %}
+															{% set directions = directions|merge([payment.direction]) %}
+														{% endif %}
+													{% endfor %}
+													{% set directions = directions|sort %}
+													{% for direction in directions %}
+														<option value="{{ direction }}">{{ direction }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-3">
+											<div class="form-group">
+												<label for="filterStatus">Статус</label>
+												<select class="form-control" id="filterStatus">
+													<option value="">Все статусы</option>
+													<option value="завершена">Оплачено</option>
+													<option value="ожидает">Ожидает оплаты</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-md-3">
+											<div class="form-group">
+												<label for="filterService">Услуга</label>
+												<select class="form-control" id="filterService">
+													<option value="">Все услуги</option>
+													{% set services = [] %}
+													{% for payment in student_payments %}
+														{% if payment.serviceName not in services %}
+															{% set services = services|merge([payment.serviceName]) %}
+														{% endif %}
+													{% endfor %}
+													{% for service in services|sort %}
+														<option value="{{ service }}">{{ service }}</option>
+													{% endfor %}
+													</select>
+											</div>
+										</div>
+										<div class="col-md-3">
+											<div class="form-group">
+												<label for="searchStudent">Поиск студента</label>
+												<input type="text" class="form-control" id="searchStudent" placeholder="Введите ФИО студента...">
+											</div>
+										</div>
+									</div>
+									<div class="mt-3">
+										<button id="resetFilters" class="btn btn-outline-secondary">
+											<i class="fas fa-redo"></i>
+											Сбросить фильтры
+										</button>
+										<button id="applyFilters" class="btn btn-primary">
+											<i class="fas fa-check"></i>
+											Применить
+										</button>
+									</div>
+								</div> #}
+
+		<!-- Основная таблица -->
+			<div class="card master-card shadow mb-4"> <div class="card-header py-3">
+				<h6 class="m-0 font-weight-bold text-primary">
+					<i class="fas fa-table"></i>
+					Детальная информация об оплатах
+				</h6>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered table-hover table-master" id="masterTable" width="100%" cellspacing="0">
+						<thead class="thead-dark">
+							<tr>
+								<th>#</th>
+								<th>Студент</th>
+								<th>Направление подготовки</th>
+								<th>Услуга</th>
+								<th>Статус оплаты</th>
+								<th>№ договора</th>
+								{# <th>Действия</th> #}
+							</tr>
+						</thead>
+						<tbody>
+							{% for payment in student_payments %}
+								<tr>
+									<td>{{ loop.index }}</td>
+									<td>
+										<strong>{{ payment.studentName }}</strong>
+									</td>
+									<td>
+										<span class="badge badge-info">
+											{{ payment.direction }}
+										</span>
+									</td>
+									<td>{{ payment.serviceName }}</td>
+									<td>
+										<span class="status-badge badge bg-{{ payment.statusBadgeClass }}">
+											{{ payment.statusText }}
+										</span>
+									</td>
+									<td>
+										{% if payment.contractNumber %}
+											<code>{{ payment.contractNumber }}</code>
+										{% else %}
+											<span class="text-muted">Не указан</span>
+										{% endif %}
+									</td>
+									{# <td>
+																																					<div class="btn-group btn-group-sm">
+																																						<button type="button" class="btn btn-outline-primary" title="Просмотреть детали">
+																																							<i class="fas fa-eye"></i>
+																																						</button>
+																																						<button type="button" class="btn btn-outline-success" title="Скачать документ">
+																																							<i class="fas fa-download"></i>
+																																						</button>
+																																					</div>
+																																				</td> #}
+								</tr>
+							{% else %}
+								<tr>
+									<td colspan="7" class="text-center text-muted py-4">
+										<i class="fas fa-database fa-3x mb-3"></i>
+										<h5>Нет данных для отображения</h5>
+										<p>Информация об оплатах студентов отсутствует</p>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- Дополнительная статистика -->
+		<div class="row">
+			<div class="col-lg-6">
+				<div class="card master-card shadow mb-4">
+					<div class="card-header py-3">
+						<h6 class="m-0 font-weight-bold text-primary">
+							<i class="fas fa-chart-pie"></i>
+							Распределение по статусам
+						</h6>
+					</div>
+					<div
+						class="card-body">
+						{# <div class="chart-pie pt-4">
+																			<canvas id="statusChart" height="250"></canvas>
+																		</div> #}
+						<div class="mt-4 text-center small">
+							{% for status in status_summary %}
+								<span class="mr-3">
+									<i class="fas fa-circle text-{{ status.status == 'завершена' ? 'success' : 'warning' }}"></i>
+									{{ status.status == 'завершена' ? 'Оплачено' : 'Ожидает' }}
+									({{ status.count }})
+								</span>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-lg-6">
+				<div class="card master-card shadow mb-4">
+					<div class="card-header py-3">
+						<h6 class="m-0 font-weight-bold text-primary">
+							<i class="fas fa-chart-bar"></i>
+							Топ услуг
+						</h6>
+					</div>
+					<div
+						class="card-body">
+						{# <div class="chart-bar pt-4">
+													<canvas id="servicesChart" height="250"></canvas>
+												</div> #}
+						<div class="mt-3">
+							<table class="table table-sm">
+								<thead>
+									<tr>
+										<th>Услуга</th>
+										<th class="text-right">Кол-во</th>
+										<th class="text-right">Сумма</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for service in top_services|slice(0, 5) %}
+										<tr>
+											<td>{{ service.service_name|slice(0, 30) }}
+												{% if service.service_name|length > 30 %}...
+												{% endif %}
+											</td>
+											<td class="text-right">{{ service.payment_count }}</td>
+											<td class="text-right amount-cell">{{ service.total_amount|number_format(0, ',', ' ') }}
+												₽</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block javascripts %}
+	{{ parent() }}
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () { // Инициализация DataTable
+const table = $('#masterTable').DataTable({
+language: {
+url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Russian.json'
+},
+pageLength: 25,
+order: [
+[0, 'asc']
+],
+dom: 'Bfrtip',
+buttons: [
+'copy',
+'csv',
+'excel',
+'pdf',
+'print'
+]
+});
+
+// Фильтры
+$('#filterDirection, #filterStatus, #filterService').on('change', function () {
+table.draw();
+});
+
+$('#searchStudent').on('keyup', function () {
+table.column(1).search(this.value).draw();
+});
+
+$('#applyFilters').on('click', function () {
+const direction = $('#filterDirection').val();
+const status = $('#filterStatus').val();
+const service = $('#filterService').val();
+
+// Создаем строку поиска для DataTables
+let search = '';
+if (direction) 
+search += direction + ' ';
+
+
+
+if (status) 
+search += status + ' ';
+
+
+
+if (service) 
+search += service + ' ';
+
+
+
+table.search(search.trim()).draw();
+});
+
+$('#resetFilters').on('click', function () {
+$('#filterDirection, #filterStatus, #filterService').val('');
+$('#searchStudent').val('');
+table.search('').columns().search('').draw();
+});
+
+// График статусов
+const statusLabels = {{ status_summary|map(s => s.status == 'завершена' ? 'Оплачено' : 'Ожидает')|json_encode|raw }};
+const statusData = {{ status_summary|map(s => s.count)|json_encode|raw }};
+const statusColors = {{ status_summary|map(s => s.status == 'завершена' ? '#1cc88a' : '#f6c23e')|json_encode|raw }};
+
+if (document.getElementById('statusChart')) {
+const ctx1 = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx1, {
+type: 'pie',
+data: {
+labels: statusLabels,
+datasets: [
+{
+data: statusData,
+backgroundColor: statusColors,
+hoverBorderColor: "rgba(234, 236, 244, 1)"
+}
+]
+},
+options: {
+maintainAspectRatio: false,
+plugins: {
+legend: {
+position: 'bottom'
+}
+}
+}
+});
+}
+
+// График услуг
+const serviceLabels = {{ top_services|map(s => s.service_name)|slice(0, 5)|json_encode|raw }};
+const serviceData = {{ top_services|map(s => s.payment_count)|slice(0, 5)|json_encode|raw }};
+
+if (document.getElementById('servicesChart')) {
+const ctx2 = document.getElementById('servicesChart').getContext('2d');
+new Chart(ctx2, {
+type: 'bar',
+data: {
+labels: serviceLabels,
+datasets: [
+{
+label: 'Количество оплат',
+data: serviceData,
+backgroundColor: '#4e73df',
+borderColor: '#4e73df',
+borderWidth: 1
+}
+]
+},
+options: {
+maintainAspectRatio: false,
+scales: {
+y: {
+beginAtZero: true,
+ticks: {
+stepSize: 1
+}
+}
+}
+}
+});
+}
+
+// Экспорт данных через AJAX
+$('.export-btn').on('click', function () {
+const format = $(this).data('format');
+
+fetch('{{ path("master_api_data") }}').then(response => response.json()).then(data => {
+console.log('Данные для экспорта:', data);
+alert (`Данные готовы для экспорта в формате ${format}`);
+});
+});
+});
+	</script>
+{% endblock %}

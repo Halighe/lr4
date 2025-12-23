@@ -9,3 +9,40 @@
 
 controllers:
     resource: routing.controllers
+app_register:
+    path: /register
+    controller: App\Controller\RegistrationController::register
+student_payments_index:
+    path: /student/payments
+    controller: App\Controller\Student\PaymentController::index
+    methods: GET
+
+student_payment_show:
+    path: /student/payments/{id}
+    controller: App\Controller\Student\PaymentController::show
+    methods: GET
+moderator_statistics_index:
+    path: /moderator/statistics
+    controller: App\Controller\Moderator\StatisticsController::index
+    methods: GET
+
+moderator_statistics_export_csv:
+    path: /moderator/statistics/export/csv
+    controller: App\Controller\Moderator\StatisticsController::exportCsv
+    methods: GET
+
+# config/routes.yaml
+master_dashboard:
+    path: /master
+    controller: App\Controller\Master\DashboardController::index
+    methods: GET
+
+master_export_csv:
+    path: /master/export/csv
+    controller: App\Controller\Master\DashboardController::exportCsv
+    methods: GET
+
+master_api_data:
+    path: /master/api/data
+    controller: App\Controller\Master\DashboardController::apiData
+    methods: GET

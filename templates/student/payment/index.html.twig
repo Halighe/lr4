@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+{% block stylesheets %}
+	{{ parent() }}
+	<link rel="stylesheet" href="{{ asset('styles/student.css') }}">
+{% endblock %}
+{% block title %}Мои ожидающие оплаты
+{% endblock %}
+
+{% block body %}
+	<div class="container mt-4">
+		<h1>Мои ожидающие оплаты</h1>
+
+		{% if app.user %}
+			<div class="mb-3">
+				Вы вошли как
+				{{ app.user.userIdentifier }},
+				<a href="{{ logout_path() }}">Выход</a>
+			</div>
+		{% endif %}
+
+		{% if payments|length > 0 %}
+			<div class="table-responsive">
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Услуга</th>
+							<th>Сумма</th>
+							<th>Дата</th>
+							<th>Статус</th>
+							<th>Действия</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for payment in payments %}
+							<tr>
+								<td>{{ payment.id }}</td>
+								<td>{{ payment.service.name  }}</td>
+								<td>{{ payment.summ }}
+									руб.</td>
+								<td>{{ payment.date|date('d.m.Y H:i') }}</td>
+								<td>
+									<span class="badge bg-warning">{{ payment.status }}</span>
+								</td>
+								<td>
+									{% if payment.status == 'ожидает' %}
+										<a href="{{ path('student_payment_complete', {'id': payment.id}) }}" class="btn btn-sm btn-success" onclick="return confirm('Отметить оплату {{ payment.summ }} руб. как завершенную?')">
+											<i class="fas fa-check-circle"></i>
+											Оплатить
+										</a>
+									{% else %}
+										<span class="badge bg-success">
+											<i class="fas fa-check"></i>
+											Оплачено
+										</span>
+									{% endif %}
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% else %}
+			<div class="alert alert-info">
+				У вас нет ожидающих оплат.
+			</div>
+		{% endif %}
+	</div>
+{% endblock %}
