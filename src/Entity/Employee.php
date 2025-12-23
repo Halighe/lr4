@@ -62,4 +62,20 @@ class Employee
 
         return $this;
     }
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+        return $this;
+    }
+
+    // Добавим метод для удобства
+    public function __toString(): string
+    {
+        return $this->getFullName() ?: 'Сотрудник #' . $this->getId();
+    }
 }

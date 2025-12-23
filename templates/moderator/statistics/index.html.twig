@@ -6,6 +6,95 @@
 {% block stylesheets %}
 	{{ parent() }}
 	<style>
+		.table {
+			color: #212529 !important;
+		}
+
+		.table th,
+		.table td {
+			color: #212529 !important;
+		}
+
+		/* Исправление цвета текста в badge */
+		.badge {
+			color: #fff !important; /* Белый текст для badge */
+		}
+
+		/* Конкретно для status-toggle можно оставить белый текст */
+		.status-toggle.badge {
+			color: #fff !important;
+		}
+
+		/* Цвета для разных статусов */
+		.badge-success {
+			background-color: #28a745 !important;
+			color: #fff !important;
+		}
+
+		.badge-warning {
+			background-color: #ffc107 !important;
+			color: #212529 !important; /* Темный текст для желтого фона */
+		}
+
+		.badge-secondary {
+			background-color: #6c757d !important;
+			color: #fff !important;
+		}
+
+		.badge-info {
+			background-color: #17a2b8 !important;
+			color: #fff !important;
+		}
+
+		.badge-primary {
+			background-color: #007bff !important;
+			color: #fff !important;
+		}
+
+		/* Специально для желтых badge делаем текст темным для контраста */
+		.badge-warning,
+		.badge.bg-warning {
+			color: #212529 !important;
+		}
+
+		/* Остальные ваши стили */
+		.stat-card {
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			transition: transform 0.3s;
+		}
+
+		.stat-card:hover {
+			transform: translateY(-5px);
+		}
+
+		.progress {
+			height: 25px;
+			border-radius: 5px;
+		}
+
+		.table-hover tbody tr:hover {
+			background-color: rgba(0, 123, 255, 0.1);
+		}
+
+		.badge-pill {
+			padding: 0.5em 1em;
+			font-size: 0.9em;
+		}
+
+		.status-toggle {
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.status-toggle:hover {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+
+		.text-right {
+			text-align: right;
+		}
 		.stat-card {
 			border-radius: 10px;
 			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -25,6 +114,17 @@
 			padding: 0.5em 1em;
 			font-size: 0.9em;
 		}
+		.status-toggle {
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.status-toggle:hover {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+		.text-right {
+			text-align: right;
+		}
 	</style>
 {% endblock %}
 
@@ -33,7 +133,7 @@
 		<div class="mb-3">
 			Вы вошли как
 			{{ app.user.userIdentifier }},
-			<a href="{{ logout_path() }}">Выход</a>
+			<a href="{{ path('app_logout') }}">Выход</a>
 		</div>
 	{% endif %}
 	<div class="container-fluid py-4">
@@ -42,17 +142,11 @@
 				<i class="fas fa-chart-bar text-primary"></i>
 				Статистика оплат по направлениям
 			</h1>
-			<div>
-				{# <a href="{{ path('moderator_statistics_export_csv') }}" class="btn btn-success">
-													<i class="fas fa-file-export"></i>
-													Экспорт в CSV
-												</a> #}
-			</div>
 		</div>
 
 		<!-- Общая статистика -->
 		<div class="row mb-4">
-			<div class="col-md-4">
+			<div class="col-md-3">
 				<div class="card stat-card border-left-success shadow h-100 py-2">
 					<div class="card-body">
 						<div class="row no-gutters align-items-center">
@@ -72,7 +166,7 @@
 				</div>
 			</div>
 
-			<div class="col-md-4">
+			<div class="col-md-3">
 				<div class="card stat-card border-left-warning shadow h-100 py-2">
 					<div class="card-body">
 						<div class="row no-gutters align-items-center">
@@ -92,7 +186,7 @@
 				</div>
 			</div>
 
-			<div class="col-md-4">
+			<div class="col-md-3">
 				<div class="card stat-card border-left-info shadow h-100 py-2">
 					<div class="card-body">
 						<div class="row no-gutters align-items-center">
@@ -105,7 +199,12 @@
 								</div>
 								<div class="mt-2 mb-0">
 									<span class="badge badge-pill badge-success">
-										{{ (total_paid / total_payments * 100)|round(1) }}% оплачено
+										{% if total_payments > 0 %}
+											{{ ((total_paid / total_payments) * 100)|round(1) }}%
+										{% else %}
+											0%
+										{% endif %}
+										оплачено
 									</span>
 								</div>
 							</div>
@@ -114,6 +213,115 @@
 							</div>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<div class="col-md-3">
+				<div class="card stat-card border-left-primary shadow h-100 py-2">
+					<div class="card-body">
+						<div class="row no-gutters align-items-center">
+							<div class="col mr-2">
+								<div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+									Всего студентов
+								</div>
+								<div class="h5 mb-0 font-weight-bold text-gray-800">
+									{{ students|length }}
+								</div>
+							</div>
+							<div class="col-auto">
+								<i class="fas fa-users fa-2x text-primary"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Таблица студентов с оплатами -->
+		<div class="card shadow mb-4">
+			<div class="card-header py-3 d-flex justify-content-between align-items-center">
+				<h3 class="m-0 font-weight-bold text-primary">
+					<i class="fas fa-users mr-2"></i>
+					Студенты и оплаты
+				</h3>
+				<div class="text-muted small">
+					* Для изменения статуса оплаты нажмите на статус
+				</div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered table-hover" id="studentsTable" width="100%" cellspacing="0">
+						<thead class="thead-dark">
+							<tr>
+								<th>ФИО студента</th>
+								<th>Направление подготовки</th>
+								<th>Сумма оплаты</th>
+								<th>Дата оплаты</th>
+								<th>Статус оплаты</th>
+								<th>Изменил статус</th>
+								<th>Дата изменения</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for student in students %}
+								<tr data-student-id="{{ student.id }}">
+									<td>
+										<strong>{{ student.fullName }}</strong>
+									</td>
+									<td>{{ student.direction }}</td>
+									<td class="text-right">
+										{% if student.paymentAmount %}
+											{{ student.paymentAmount|number_format(2, ',', ' ') }}
+											₽
+										{% else %}
+											<span class="text-muted">—</span>
+										{% endif %}
+									</td>
+									<td>
+										{% if student.paymentDate %}
+											{{ student.paymentDate|date('d.m.Y') }}
+										{% else %}
+											<span class="text-muted">—</span>
+										{% endif %}
+									</td>
+									<td class="text-center">
+										{% if student.paymentId %}
+											<span class="status-toggle badge badge-{{ student.paymentStatus == 'завершена' ? 'success' : 'warning' }} badge-pill" data-payment-id="{{ student.paymentId }}" data-current-status="{{ student.paymentStatus }}">
+												{{ student.paymentStatus == 'завершена' ? 'Оплачено' : 'Ожидает' }}
+											</span>
+										{% else %}
+											<span class="badge badge-secondary badge-pill">
+												Нет платежа
+											</span>
+										{% endif %}
+									</td>
+									<td class="text-center">
+										{% if student.checkedBy %}
+											<span class="badge badge-info">
+												{{ student.checkedBy }}
+											</span>
+										{% else %}
+											<span class="text-muted">—</span>
+										{% endif %}
+									</td>
+									<td class="text-center">
+										{% if student.checkedAt %}
+											{{ student.checkedAt|date('d.m.Y H:i') }}
+										{% else %}
+											<span class="text-muted">—</span>
+										{% endif %}
+									</td>
+								</tr>
+							{% else %}
+								<tr>
+									<td colspan="7" class="text-center text-muted py-4">
+										<i class="fas fa-user-graduate fa-2x mb-3"></i>
+										<p>Нет данных о студентах</p>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
@@ -202,14 +410,14 @@
 								<td class="text-center">
 									<strong>
 										{% if total_payments > 0 %}
-											{{ (total_paid / total_payments * 100)|round(1) }}%
+											{{ ((total_paid / total_payments) * 100)|round(1) }}%
 										{% else %}
 											0%
 										{% endif %}
 									</strong>
 								</td>
 								<td>
-									{% set total_percentage = total_payments > 0 ? (total_paid / total_payments * 100)|round(1) : 0 %}
+									{% set total_percentage = total_payments > 0 ? ((total_paid / total_payments) * 100)|round(1) : 0 %}
 									<div class="progress">
 										<div class="progress-bar bg-success" style="width: {{ total_percentage }}%" role="progressbar">
 											{{ total_percentage }}%
@@ -223,7 +431,7 @@
 			</div>
 		</div>
 
-		<!-- График (опционально) -->
+		<!-- Графики -->
 		<div class="row">
 			<div class="col-lg-6">
 				<div class="card shadow mb-4">
@@ -262,8 +470,143 @@
 {% block javascripts %}
 	{{ parent() }}
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 	<script>
-		document.addEventListener('DOMContentLoaded', function () { // Данные для графиков
+		document.addEventListener('DOMContentLoaded', function () { // Инициализация DataTable для таблицы студентов
+if ($('#studentsTable').length) {
+$('#studentsTable').DataTable({
+language: {
+url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Russian.json'
+},
+pageLength: 25,
+order: [
+[3, 'desc']
+],
+columnDefs: [
+{
+orderable: false,
+targets: [4, 5, 6]
+} // Отключаем сортировку для последних 3 колонок
+]
+});
+}
+
+// Обработка изменения статуса оплаты
+document.querySelectorAll('.status-toggle').forEach(function (element) {
+element.addEventListener('click', function () {
+const paymentId = this.getAttribute('data-payment-id');
+const currentStatus = this.getAttribute('data-current-status');
+const newStatus = currentStatus === 'завершена' ? 'ожидает' : 'завершена';
+
+console.log('Current status:', currentStatus);
+console.log('New status:', newStatus);
+console.log('Payment ID:', paymentId);
+
+if (!confirm (`Изменить статус оплаты на "${
+newStatus === 'завершена' ? 'Оплачено' : 'Ожидает'
+}"?`)) {
+return;
+}
+
+// Блокируем кнопку на время запроса
+const originalText = this.textContent;
+const originalClasses = this.className;
+this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+this.classList.remove('badge-success', 'badge-warning');
+this.classList.add('badge-secondary');
+
+// Отправляем AJAX-запрос
+fetch('{{ path("moderator_payment_toggle") }}', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'X-Requested-With': 'XMLHttpRequest'
+},
+body: JSON.stringify(
+{payment_id: paymentId, new_status: newStatus}
+)
+}).then(response => {
+console.log('Response status:', response.status);
+
+if (!response.ok) {
+return response.text().then(text => {
+console.error('Response text:', text);
+throw new Error (`HTTP error! status: ${
+response.status
+}`);
+});
+}
+return response.json();
+}).then(data => {
+console.log('Response data:', data);
+
+if (data.success) { // Обновляем отображение
+this.setAttribute('data-current-status', newStatus);
+this.textContent = newStatus === 'завершена' ? 'Оплачено' : 'Ожидает';
+this.className = `status-toggle badge badge-${
+newStatus === 'завершена' ? 'success' : 'warning'
+} badge-pill`;
+
+// Обновляем информацию о том, кто изменил статус
+const row = this.closest('tr');
+const checkedByCell = row.cells[5];
+const checkedAtCell = row.cells[6];
+
+if (data.checked_by) {
+checkedByCell.innerHTML = `<span class="badge badge-info">${
+data.checked_by
+}</span>`;
+}
+
+if (data.checked_at) {
+checkedAtCell.textContent = data.checked_at;
+}
+
+// Показываем уведомление об успехе
+showNotification('Статус оплаты успешно обновлен!', 'success');
+
+// Обновляем статистику на странице
+setTimeout(() => {
+location.reload();
+}, 1500);
+} else {
+throw new Error(data.message || 'Неизвестная ошибка');
+}
+}).catch(error => {
+console.error('Error details:', error);
+
+// Восстанавливаем оригинальный вид
+this.textContent = originalText;
+this.className = originalClasses;
+
+// Показываем подробное уведомление об ошибке
+showNotification('Ошибка при изменении статуса: ' + error.message, 'danger');
+});
+});
+});
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'info') { // Создаем элемент уведомления
+const alert = document.createElement('div');
+alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+alert.innerHTML = `
+					${message}
+					<button type="button" class="close" data-dismiss="alert">
+						<span>&times;</span>
+					</button>
+				`;
+
+document.body.appendChild(alert);
+
+// Автоматически скрываем через 5 секунд
+setTimeout(() => {
+alert.classList.remove('show');
+setTimeout(() => alert.remove(), 150);
+}, 5000);
+}
+
+// Данные для графиков
 const directions = {{ stats|map(stat => stat.direction)|json_encode|raw }};
 const paidCounts = {{ stats|map(stat => stat.paidCount)|json_encode|raw }};
 const unpaidCounts = {{ stats|map(stat => stat.unpaidCount)|json_encode|raw }};
@@ -338,7 +681,8 @@ beginAtZero: true
 });
 }
 
-// Сортировка таблицы
+// Сортировка таблицы статистики
+if ($('#statsTable').length) {
 $('#statsTable').DataTable({
 language: {
 url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Russian.json'
@@ -346,8 +690,9 @@ url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Russian.json'
 pageLength: 10,
 order: [
 [4, 'desc']
-] // Сортировка по % оплачено
+]
 });
+}
 });
 	</script>
 {% endblock %}

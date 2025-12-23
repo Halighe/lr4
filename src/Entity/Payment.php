@@ -31,6 +31,8 @@ class Payment
     #[ORM\Column(length: 255)]
     private ?string $status = null;
 
+    #[ORM\OneToOne(mappedBy: 'payment', targetEntity: PaymentCheck::class, cascade: ['persist', 'remove'])]
+    private ?PaymentCheck $paymentCheck = null;
     public function getId(): ?int
     {
         return $this->id;
@@ -90,6 +92,39 @@ class Payment
     public function setStudent(?Student $student): static
     {
         $this->student = $student;
+        return $this;
+    }
+
+    public function getPaymentCheck(): ?PaymentCheck
+    {
+        return $this->paymentCheck;
+    }
+
+    public function setPaymentCheck(?PaymentCheck $paymentCheck): static
+    {
+        // unset the owning side of the relation if necessary
+        if ($paymentCheck === null && $this->paymentCheck !== null) {
+            $this->paymentCheck->setPayment(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($paymentCheck !== null && $paymentCheck->getPayment() !== $this) {
+            $paymentCheck->setPayment($this);
+        }
+
+        $this->paymentCheck = $paymentCheck;
+
+        return $this;
+    }
+
+    public function getAmount(): ?string  // Добавляем этот метод для совместимости
+    {
+        return $this->summ;
+    }
+
+    public function setAmount(string $amount): static
+    {
+        $this->summ = $amount;
         return $this;
     }
 }

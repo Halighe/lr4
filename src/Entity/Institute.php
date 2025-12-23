@@ -57,9 +57,28 @@ class Institute
         $this->students = new ArrayCollection();
     }
 
+    public function addStudent(Student $student): static
+    {
+        if (!$this->students->contains($student)) {
+            $this->students->add($student);
+            $student->addInstitute($this);
+        }
+
+        return $this;
+    }
+
+    public function removeStudent(Student $student): static
+    {
+        if ($this->students->removeElement($student)) {
+            $student->removeInstitute($this);
+        }
+
+        return $this;
+    }
+
     // Для отображения в выпадающих списках
     public function __toString(): string
     {
-        return $this->groupName . ' (' . $this->direction . ')';
+        return $this->getGroupName() . ' (' . $this->getDirection() . ')';
     }
 }

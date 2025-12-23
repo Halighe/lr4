@@ -36,6 +36,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(targetEntity: Student::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?Student $student = null;
 
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Employee::class)]
+    private ?Employee $employee = null;
+
     public function getStudent(): ?Student
     {
         return $this->student;
@@ -139,9 +142,44 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
+    }
+
+    public function getEmployee(): ?Employee
+    {
+        return $this->employee;
+    }
+
+    public function setEmployee(?Employee $employee): static
+    {
+        // Убираем связь с предыдущим Employee
+        if ($this->employee !== null && $this->employee->getUser() === $this) {
+            $this->employee->setUser(null);
+        }
+
+        // Устанавливаем новую связь
+        $this->employee = $employee;
+
+        if ($employee !== null && $employee->getUser() !== $this) {
+            $employee->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function getFullName(): ?string
+    {
+        if ($this->employee && $this->employee->getFullName()) {
+            return $this->employee->getFullName();
+        }
+
+        if ($this->getStudent() && $this->getStudent()->getFullName()) {
+            return $this->getStudent()->getFullName();
+        }
+
+        return $this->getEmail();
     }
 
     #[\Deprecated]
